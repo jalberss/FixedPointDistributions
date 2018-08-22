@@ -129,8 +129,13 @@ void tests(){
 
   c = mul_fp(a,b);
   assert(c.whole == 0x0000000000008000);
+  c = div_fp(a,b);
+  assert(c.whole == 0x0000000000020000);
 
-  
+  set_integral(&a,16);
+  assert(log2fix(a.whole, a.precision)== 0x0000000000040000);
+  set_integral(&a,32);
+  assert(log2fix(a.whole, a.precision)== 0x0000000000050000);
   
 }
 
@@ -138,12 +143,21 @@ void print_num(uint64_t a){
   printf("%"PRIx64"\n",a);
 }
 
+struct fixed_64 div_fp (struct fixed_64 a, struct fixed_64 b){
+  assert(a.precision == b.precision);
+  uint64_t total = ((a.whole << (a.precision)) / b.whole);
+
+  struct fixed_64 out = {
+    .whole = total,
+    .precision = a.precision
+  };
+
+  return out;
+}
+
 struct fixed_64 mul_fp (struct fixed_64 a, struct fixed_64 b) {
   assert(a.precision == b.precision);
 
-  printf("Fuck\n");
-  print_num(a.whole);
-  print_num(b.whole);
   uint64_t total = (a.whole * b.whole) >> a.precision; // Can overflow
   if (total < a.whole && total < b.whole){
     printf("Overflow\n");
@@ -157,13 +171,14 @@ struct fixed_64 mul_fp (struct fixed_64 a, struct fixed_64 b) {
   };
   return out;
 }
-int32_t log2fix (uint32_t x, size_t precision)
+
+uint64_t log2fix (uint64_t x, size_t precision)
 {
-    int32_t b = 1U << (precision - 1);
-    int32_t y = 0;
+    uint64_t b = 1U << (precision - 1);
+    uint64_t y = 0;
 
 
-    if (precision < 1 || precision > 31) {
+    if (precision < 1 || precision > 63) {
         return INT32_MAX; // indicates an error
     }
 
@@ -181,7 +196,7 @@ int32_t log2fix (uint32_t x, size_t precision)
         y += 1U << precision;
     }
 
-    uint64_t z = x;
+    __uint128_t z = x;
 
     for (size_t i = 0; i < precision; i++) {
         z = z * z >> precision;
@@ -194,3 +209,12 @@ int32_t log2fix (uint32_t x, size_t precision)
 
     return y;
 }
+
+/* int32_t logfix (uint32_t x, size_t precision) */
+/* { */
+/*     uint64_t t; */
+
+/*     t = log2fix(x, precision) * INV_LOG2_E_Q1DOT31; */
+
+/*     return t >> 31; */
+/* } */
