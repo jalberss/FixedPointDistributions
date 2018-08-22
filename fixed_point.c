@@ -97,38 +97,62 @@ void tests(){
 
   assert(b.whole == 0x0000000100000000);
 
+
+  a.precision = 16;
+  b.precision = 16;
+  a.whole = 0;
+  b.whole = 0;
+  set_integral(&a,1);
+  set_integral(&b,1);
   c = mul_fp(a,b);
-  assert(c.whole == 0x0000000100000000);
+  assert(c.whole == 0x0000000000010000);
 
   set_integral(&a,0x2);
-  assert(a.whole == 0x0000000200000000);
+  assert(a.whole == 0x0000000000020000);
   
   c = mul_fp(a,b);
-  assert(c.whole == 0x0000000200000000);
+  assert(c.whole == 0x0000000000020000);
+
+  set_integral(&b,2);
+
+  c = mul_fp(a,b);
+  assert(c.whole == 0x0000000000040000);
+
+
+  set_integral(&a,1);
+  set_integral(&b,0);  
+  set_decimal(&a,0);
+  set_decimal(&b,0x8000);
+  
+
+
+
+  c = mul_fp(a,b);
+  assert(c.whole == 0x0000000000008000);
 
   
   
 }
 
+void print_num(uint64_t a){
+  printf("%"PRIx64"\n",a);
+}
 
 struct fixed_64 mul_fp (struct fixed_64 a, struct fixed_64 b) {
   assert(a.precision == b.precision);
-  uint64_t a_lower, b_lower, a_upper, b_upper;
-  a_upper = get_integral(a);
-  a_lower = get_decimal(a);
 
-  b_upper = get_integral(b);
-  b_lower = get_decimal(b);
-
-  printf("a:%"PRIx64"\nb:%"PRIx64"\n", a_upper, b_lower);
-
-  uint64_t c_upper = a_upper * b_upper;
-  uint64_t c_lower = a_lower * b_lower;
-
-  printf("%"PRIx64"\n%"PRIx64"\n", c_upper, c_lower);
-
+  printf("Fuck\n");
+  print_num(a.whole);
+  print_num(b.whole);
+  uint64_t total = (a.whole * b.whole) >> a.precision; // Can overflow
+  if (total < a.whole && total < b.whole){
+    printf("Overflow\n");
+    struct fixed_64 a;
+    memset(&a, 0, sizeof(struct fixed_64));
+    return a;
+  }
   struct fixed_64 out = {
-    .whole = ((c_upper << a.precision) | c_lower),
+    .whole = total,
     .precision = a.precision
   };
   return out;
