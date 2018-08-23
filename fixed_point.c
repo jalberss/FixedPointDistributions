@@ -235,11 +235,12 @@ uint64_t log2fix (struct fixed_64 fp)
 
 
 static void next_exp(uint64_t precision){
-  // Rand_max = 2^31-1
+  // Rand_max = 2^31-1 
 
   srand(time(NULL));
-  
-  uint64_t ran = rand() % 65536;
+
+
+  uint64_t ran = rand() % 2147483647;
   printf("x %"PRIi64"\n",ran);
   
   struct fixed_64 r = {
