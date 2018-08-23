@@ -1,9 +1,11 @@
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <assert.h>
 #include <inttypes.h>
 #include <limits.h>
 #include <string.h>
+#include <time.h>
 
 #include "fixed_point.h"
 
@@ -44,7 +46,8 @@ void print(struct fixed_64 fp){
   uint64_t mask = 0xFFFFFFFFFFFFFFFF;
   uint64_t lower = fp.whole & (mask >> fp.precision);
   uint64_t upper = fp.whole >> (fp.precision);
-  printf("%" PRIx64 ".%" PRIx64 "\n Prec %"PRIx64"\n",upper, lower, fp.precision);
+  printf("%08" PRIx64 ".%08" PRIx64 "\n Prec %"PRIu64"\n",upper, lower, fp.precision);
+  printf("%08" PRIu64 ".%08" PRIu64 "\n Prec %"PRIu64"\n",upper, lower, fp.precision);
 }
 
 void tests();
@@ -81,6 +84,11 @@ void tests(){
   set_decimal(&test, 0xFFFFFFFFFFFFFFFF);
   set_integral(&test, 0x1);
   assert(test.whole == 0xFFFFFFFFFFFFFFFF);
+
+  test.whole = 0;
+  test.precision = 32;
+  set_decimal(&test, 0x1);
+  assert(test.whole == 0x0000000000000001);
 
   struct fixed_64 a,b,c;
   memset(&a,0,sizeof(struct fixed_64));
@@ -131,21 +139,34 @@ void tests(){
   assert(c.whole == 0x0000000000008000);
   c = div_fp(a,b);
   assert(c.whole == 0x0000000000020000);
+  c = div_fp(b,a);
+  assert(c.whole == 0x0000000000008000);
+  
+  b.whole = 0;
+  set_integral(&b,0x4);
+  a.whole = 0;
+  set_integral(&a,0x2);
+  c = div_fp(a,b);
+  assert(c.whole == 0x0000000000008000);
+  
 
   set_integral(&a,16);
-  assert(log2fix(a.whole, a.precision)== 0x0000000000040000);
+  assert(log2fix(a)== 0x0000000000040000);
   set_integral(&a,32);
-  assert(log2fix(a.whole, a.precision)== 0x0000000000050000);
-  
+  assert(log2fix(a)== 0x0000000000050000);
+
+  next_exp(32);
+
+
 }
 
 void print_num(uint64_t a){
-  printf("%"PRIx64"\n",a);
+  printf("%016"PRIx64"\n",a);
 }
 
 struct fixed_64 div_fp (struct fixed_64 a, struct fixed_64 b){
   assert(a.precision == b.precision);
-  uint64_t total = ((a.whole << (a.precision)) / b.whole);
+  uint64_t total = (((__uint128_t)a.whole << (a.precision)) / ((__uint128_t)b.whole));
 
   struct fixed_64 out = {
     .whole = total,
@@ -172,49 +193,65 @@ struct fixed_64 mul_fp (struct fixed_64 a, struct fixed_64 b) {
   return out;
 }
 
-uint64_t log2fix (uint64_t x, size_t precision)
+uint64_t log2fix (struct fixed_64 fp)
 {
-    uint64_t b = 1U << (precision - 1);
-    uint64_t y = 0;
+  uint64_t x= fp.whole;
+  size_t precision = fp.precision;
+  uint64_t b = 1U << (precision - 1);
+  uint64_t y = 0;
 
 
-    if (precision < 1 || precision > 63) {
-        return INT32_MAX; // indicates an error
+  if (precision < 1 || precision > 63) {
+    return UINT64_MAX; // indicates an error
+  }
+
+  if (x == 0) {
+    return UINT64_MAX; // represents negative infinity
+  }
+
+  while (x < 1U << precision) {
+    x <<= 1;
+    y -= 1U << precision;
+  }
+
+  while (x >= 2U << precision) {
+    x >>= 1;
+    y += 1U << precision;
+  }
+
+  __uint128_t z = x;
+
+  for (size_t i = 0; i < precision; i++) {
+    z = z * z >> precision;
+    if (z >= 2U << precision) {
+      z >>= 1;
+      y += b;
     }
+    b >>= 1;
+  }
 
-    if (x == 0) {
-        return INT32_MIN; // represents negative infinity
-    }
-
-    while (x < 1U << precision) {
-        x <<= 1;
-        y -= 1U << precision;
-    }
-
-    while (x >= 2U << precision) {
-        x >>= 1;
-        y += 1U << precision;
-    }
-
-    __uint128_t z = x;
-
-    for (size_t i = 0; i < precision; i++) {
-        z = z * z >> precision;
-        if (z >= 2U << precision) {
-            z >>= 1;
-            y += b;
-        }
-        b >>= 1;
-    }
-
-    return y;
+  return y;
 }
 
-/* int32_t logfix (uint32_t x, size_t precision) */
-/* { */
-/*     uint64_t t; */
 
-/*     t = log2fix(x, precision) * INV_LOG2_E_Q1DOT31; */
+static void next_exp(uint64_t precision){
+  // Rand_max = 2^31-1
 
-/*     return t >> 31; */
+  srand(time(NULL));
+  
+  uint64_t ran = rand() % 65536;
+  printf("x %"PRIi64"\n",ran);
+  
+  struct fixed_64 r = {
+    .whole = ran,
+    .precision = precision
+  };
+
+  print(r);
+}
+
+/* static struct fixed_64 next_exp(float rate_parameter){ */
+/*   double u = rand() / (RAND_MAX); */
+/*   return -(log2fix(1-u))/rate_parameter; */
+  
 /* } */
