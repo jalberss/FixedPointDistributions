@@ -13,3 +13,5 @@ uint64_t get_decimal(struct fixed_64);
 void print(struct fixed_64);
 uint64_t log2fix (struct fixed_64);
 static void next_exp();
+void print_num(uint64_t);
+int64_t logfix (struct fixed_64);
