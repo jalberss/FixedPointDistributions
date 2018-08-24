@@ -6,6 +6,7 @@
 #include <limits.h>
 #include <string.h>
 #include <time.h>
+#include <unistd.h>
 
 #include "fixed_point.h"
 
@@ -47,7 +48,6 @@ void print(struct fixed_64 fp){
   uint64_t lower = fp.whole & (mask >> fp.precision);
   uint64_t upper = fp.whole >> (fp.precision);
   printf("%08" PRIx64 ".%08" PRIx64 "\n Prec %"PRIu64"\n",upper, lower, fp.precision);
-  printf("%08" PRIu64 ".%08" PRIu64 "\n Prec %"PRIu64"\n",upper, lower, fp.precision);
 }
 
 void tests();
@@ -155,18 +155,21 @@ void tests(){
   set_integral(&a,32);
   assert(log2fix(a)== 0x0000000000050000);
 
-  next_exp(32);
-
+  while(1){
+    next_exp(32);
+    sleep(1);
+  }
 
 }
 
 void print_num(uint64_t a){
-  printf("%016"PRIx64"\n",a);
+  fprintf(stderr,"%"PRIu64"\n",a);
 }
 
 struct fixed_64 div_fp (struct fixed_64 a, struct fixed_64 b){
   assert(a.precision == b.precision);
-  uint64_t total = (((__uint128_t)a.whole << (a.precision)) / ((__uint128_t)b.whole));
+  assert(sizeof(__uint128_t) == 16);
+  uint64_t total = ((((__uint128_t)a.whole) << ((__uint128_t)a.precision)) / ((__uint128_t)b.whole));
 
   struct fixed_64 out = {
     .whole = total,
@@ -240,15 +243,30 @@ static void next_exp(uint64_t precision){
   srand(time(NULL));
 
 
-  uint64_t ran = rand() % 2147483647;
-  printf("x %"PRIi64"\n",ran);
+  uint64_t ran = rand();
+  printf("32x %"PRIx64"\n",ran);
+  ran <<= precision;
+  printf("64x %"PRIx64"\n",ran);
   
   struct fixed_64 r = {
     .whole = ran,
     .precision = precision
   };
-
   print(r);
+
+  uint64_t max = (uint64_t)RAND_MAX;
+  max <<= precision;
+  struct fixed_64 MAX = {
+    .whole = max,
+    .precision = precision
+  };
+  print(MAX);
+
+  struct fixed_64 c = div_fp(r, MAX);
+  printf("__________________\n");
+  print(c);
+  uint64_t moment = log2fix(r);
+  print_num(moment);
 }
 
 /* static struct fixed_64 next_exp(float rate_parameter){ */
