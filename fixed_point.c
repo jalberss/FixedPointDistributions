@@ -11,7 +11,12 @@
 #include "fixed_point.h"
 
 
-#define INV_LOG2_E_Q1DOT31  UINT64_C(0x58b90bfc)
+//#define INV_LOG2_E (uint64_t 0xB17217F7)
+
+struct fixed_64 INV_LOG2_E = {
+  .whole = 0x00000000B17217F7,
+  .precision = 32,
+};
 
 void set_integral(struct fixed_64* fp, uint64_t num){
   // Get number of integral bits
@@ -186,15 +191,16 @@ struct fixed_64 div_fp (struct fixed_64 a, struct fixed_64 b){
 struct fixed_64 mul_fp (struct fixed_64 a, struct fixed_64 b) {
   assert(a.precision == b.precision);
 
-  uint64_t total = (a.whole * b.whole) >> a.precision; // Can overflow
-  if (total < a.whole && total < b.whole){
-    printf("Overflow\n");
-    struct fixed_64 a;
-    memset(&a, 0, sizeof(struct fixed_64));
-    return a;
-  }
+  __uint128_t total = ((__uint128_t)a.whole) * ((__uint128_t)b.whole);
+  total = total >> ((__uint128_t)a.precision); // Can overflow
+  /* if (total < a.whole && total < b.whole){ */
+  /*   printf("Overflow\n"); */
+  /*   struct fixed_64 a; */
+  /*   memset(&a, 0, sizeof(struct fixed_64)); */
+  /*   return a; */
+  /* } */
   struct fixed_64 out = {
-    .whole = total,
+    .whole = (uint64_t)total,
     .precision = a.precision
   };
   return out;
@@ -204,7 +210,6 @@ uint64_t log2fix (struct fixed_64 fp)
 {
   uint64_t x= fp.whole;
   uint64_t precision = fp.precision;
-  printf("x: %"PRIu64"\nprecison: %"PRIu64"\n",x, precision);
   uint64_t b = 1U << (precision - 1);
   uint64_t y = 0;
 
@@ -221,18 +226,14 @@ uint64_t log2fix (struct fixed_64 fp)
   while (x < one) {
     x <<= 1;
     y -= (((uint64_t)1U) << precision);
-    printf("Shift Left %"PRIx64"\n", x);
   }
 
   uint64_t two = (((uint64_t)(2U)) << precision);
   while (x >= two) {
     x >>= 1;
     y += (((uint64_t)1U) << precision);
-    printf("Shifting Right %"PRIx64"\n", x);
   }
 
-
-  printf("is this number between 1 & 2 %"PRIx64"\n", x);
   __uint128_t z = x;
 
   for (size_t i = 0; i < precision; i++) {
@@ -250,9 +251,6 @@ uint64_t log2fix (struct fixed_64 fp)
 
 static void next_exp(uint64_t precision){
   // Rand_max = 2^31-1 
-
-  srand(time(NULL));
-
 
   uint64_t ran = rand();
   printf("32x %"PRIx64"\n",ran);
@@ -278,10 +276,6 @@ static void next_exp(uint64_t precision){
   printf("Div result: ");
   print(c);
   uint64_t log = logfix(c);
-  printf("_________________\n");
-  printf("Log result: ");
-  printf("%"PRIx64"\n",log);
-  printf("\n\n");
 }
 
 /* static struct fixed_64 next_exp(float rate_parameter){ */
@@ -292,14 +286,23 @@ static void next_exp(uint64_t precision){
 
 int64_t logfix(struct fixed_64 a)
 {
-  __uint128_t t;
-
-  uint64_t log2 = log2fix(a);
+  
+  uint64_t n_log2 = log2fix(a);
   printf("log 2 result: ");
-  print_num(log2);
   // Result will be as if the number were negative so we must then flip the result
+  uint64_t final = ((int64_t)n_log2)*-1;
+  print_num(final);
+  
   printf("\n\n");
-  t = log2fix(a) * (INV_LOG2_E_Q1DOT31 << 31);
 
-  return t >> 63;
+  struct fixed_64 log2 = {
+    .whole = final,
+    .precision = a.precision,
+  };
+
+  struct fixed_64 t = mul_fp(log2,INV_LOG2_E);
+
+  printf("Log_e result:? ");
+  print(t);
+  return t.whole;
 }
