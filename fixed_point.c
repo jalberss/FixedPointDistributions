@@ -51,12 +51,12 @@ uint64_t get_decimal(struct fixed_64 fp){
 }
 
 void print(struct fixed_64 fp){
-  printf("Whole Number %"PRIx64"\n",fp.whole);
-  printf("Whole Number %"PRIu64"\n",fp.whole);
+  //printf("Whole Number %"PRIx64"\n",fp.whole);
+  //printf("Whole Number %"PRIu64"\n",fp.whole);
   uint64_t mask = 0xFFFFFFFFFFFFFFFF;
   uint64_t lower = fp.whole & (mask >> fp.precision);
   uint64_t upper = fp.whole >> (fp.precision);
-  printf("%08" PRIx64 ".%08" PRIx64 "\n Prec %"PRIu64"\n",upper, lower, fp.precision);
+  //printf("%08" PRIx64 ".%08" PRIx64 "\n Prec %"PRIu64"\n",upper, lower, fp.precision);
 }
 
 void tests();
@@ -166,12 +166,12 @@ void tests(){
 
   while(1){
     next_exp(32);
-    sleep(1);
   }
 
 }
 
 void print_num(uint64_t a){
+  return;
   fprintf(stdout,"%016"PRIx64"\n",a);
 }
 
@@ -253,9 +253,9 @@ static void next_exp(uint64_t precision){
   // Rand_max = 2^31-1 
 
   uint64_t ran = rand();
-  printf("32x %"PRIx64"\n",ran);
+  //  printf("32x %"PRIx64"\n",ran);
   ran <<= precision;
-  printf("64x %"PRIx64"\n",ran);
+  //printf("64x %"PRIx64"\n",ran);
   
   struct fixed_64 r = {
     .whole = ran,
@@ -272,10 +272,19 @@ static void next_exp(uint64_t precision){
   print(MAX);
 
   struct fixed_64 c = div_fp(r, MAX);
-  printf("__________________\n");
-  printf("Div result: ");
+  //printf("__________________\n");
+  //printf("Div result: ");
   print(c);
-  uint64_t log = logfix(c);
+  struct fixed_64 log = logfix(c);
+
+  struct fixed_64 rate = {
+    .whole = 0x0000000100000000,
+    .precision = 32
+  };
+  
+  struct fixed_64 result = div_fp(log,rate);
+  fprintf(stderr,"Grab this: %"PRIu64"\n", result.whole);
+  //print(result);
 }
 
 /* static struct fixed_64 next_exp(float rate_parameter){ */
@@ -284,16 +293,16 @@ static void next_exp(uint64_t precision){
   
 /* } */
 
-int64_t logfix(struct fixed_64 a)
+struct fixed_64 logfix(struct fixed_64 a)
 {
   
   uint64_t n_log2 = log2fix(a);
-  printf("log 2 result: ");
+  //printf("log 2 result: ");
   // Result will be as if the number were negative so we must then flip the result
   uint64_t final = ((int64_t)n_log2)*-1;
   print_num(final);
   
-  printf("\n\n");
+  //printf("\n\n");
 
   struct fixed_64 log2 = {
     .whole = final,
@@ -302,7 +311,7 @@ int64_t logfix(struct fixed_64 a)
 
   struct fixed_64 t = mul_fp(log2,INV_LOG2_E);
 
-  printf("Log_e result:? ");
+  //printf("Log_e result:? ");
   print(t);
-  return t.whole;
+  return t;
 }

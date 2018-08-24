@@ -14,4 +14,4 @@ void print(struct fixed_64);
 uint64_t log2fix (struct fixed_64);
 static void next_exp();
 void print_num(uint64_t);
-int64_t logfix (struct fixed_64);
+struct fixed_64 logfix (struct fixed_64);
