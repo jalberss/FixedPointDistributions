@@ -146,9 +146,6 @@ void tests(){
   set_decimal(&a,0);
   set_decimal(&b,0x8000);
   
-
-
-
   c = mul_fp(a,b);
   assert(c.whole == 0x0000000000008000);
   c = div_fp(a,b);
@@ -169,20 +166,30 @@ void tests(){
   set_integral(&a,32);
   assert(log2fix(a)== 0x0000000000050000);
 
+  struct fixed_64 x = secs_to_fixed(1, 1, 32);
+
+  print_num(x.whole);
+  
+  assert(x.whole == 0x0000000100001000);
+
+  x = secs_to_fixed(1, 0x100000, 32);
+
+  assert(x.whole == 0x0000000200000000);
+  
 
   struct fixed_64 rate = {
     .whole = 0x0000000100000000,
     .precision = 32
   };
 
-  while(1){
-    next_exp(rate);
-  }
+  /* while(1){ */
+  /*   next_exp(rate); */
+  /* } */
 
 }
 
 void print_num(uint64_t a){
-  return;
+  //  return;
   fprintf(stdout,"%016"PRIx64"\n",a);
 }
 
@@ -259,7 +266,44 @@ uint64_t log2fix (struct fixed_64 fp)
 }
 
 
-static void next_exp(struct fixed_64 rate_parameter)
+
+struct fixed_64 secs_to_fixed(time_t seconds, suseconds_t usecs, uint64_t precision){
+
+  // susecs_t is long int, should we check for it being less than 0?
+
+  
+  if (usecs < 0){
+    fprintf(stderr, "We cannot time travel yet");
+    usecs = 0;
+  }
+
+  if ((seconds > UINT32_MAX) || (usecs > UINT32_MAX)){
+    fprintf(stderr,"WARNING: RESULT WILL OVERFLOW\n");
+  }
+
+
+  seconds <<= precision;
+
+  printf("seconds  ");
+  print_num(seconds);
+
+  #define USEC_IN_SEC 12
+  uint64_t useconds = ((uint64_t)usecs) << USEC_IN_SEC;
+
+  printf("useconds ");
+  print_num(useconds);
+
+  uint64_t full = seconds + useconds;
+
+  struct fixed_64 res = {
+			 .whole = full,
+			 .precision = precision
+  };
+
+  return res;
+}
+
+static uint64_t next_exp(struct fixed_64 rate_parameter)
 {
 
 
@@ -285,6 +329,7 @@ static void next_exp(struct fixed_64 rate_parameter)
 
   struct fixed_64 result = div_fp(log,rate_parameter);
   fprintf(stderr,"Grab this: %"PRIu64"\n", result.whole);
+  return result.whole;
 }
 
 struct fixed_64 logfix(struct fixed_64 a)
