@@ -10,6 +10,8 @@
 
 #include "fixed_point.h"
 
+#define USEC_IN_SEC 12 // There's about 2^12 useconds in a second
+
 #if DEBUG_OUTPUT                                                                               
 #define DEBUG(S, ...) fprintf(stderr, "fpe_preload: debug(%8d): " S, ##__VA_ARGS__)  
 #else                                                                                          
@@ -177,9 +179,14 @@ void tests(){
   
   assert(x.whole == 0x0000000100001000);
 
+  assert(1 == get_usecs(x));
+  assert(1 == get_secs(x));
+
   x = secs_to_fixed(1, 0x100000, 32);
 
+  assert(get_secs(x) == 2);
   assert(x.whole == 0x0000000200000000);
+
   
 
   struct fixed_64 rate = {
@@ -270,7 +277,17 @@ uint64_t log2fix (struct fixed_64 fp)
   return y;
 }
 
+suseconds_t get_usecs(struct fixed_64 fp){
+  // Decimal does not exactly correspond to number of useconds,
+  // so we have to shift.
+  uint64_t decimal = get_decimal(fp);
+  decimal >>= USEC_IN_SEC;
+  return (suseconds_t)decimal;
+}
 
+time_t get_secs(struct fixed_64 fp){
+  return get_integral(fp);
+}
 
 struct fixed_64 secs_to_fixed(time_t seconds, suseconds_t usecs, uint64_t precision){
 
@@ -293,7 +310,7 @@ struct fixed_64 secs_to_fixed(time_t seconds, suseconds_t usecs, uint64_t precis
   printf("seconds  ");
   print_num(seconds);
 
-  #define USEC_IN_SEC 12
+
   uint64_t useconds = ((uint64_t)usecs) << USEC_IN_SEC;
 
   printf("useconds ");

@@ -25,3 +25,5 @@ uint64_t log2fix (struct fixed_64);
 
 
 struct fixed_64 secs_to_fixed(time_t, suseconds_t, uint64_t);
+suseconds_t get_usecs(struct fixed_64 fp);
+time_t get_secs(struct fixed_64 fp);
