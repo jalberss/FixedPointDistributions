@@ -10,6 +10,11 @@
 
 #include "fixed_point.h"
 
+#if DEBUG_OUTPUT                                                                               
+#define DEBUG(S, ...) fprintf(stderr, "fpe_preload: debug(%8d): " S, ##__VA_ARGS__)  
+#else                                                                                          
+#define DEBUG(S, ...)                                                                          
+#endif                                                                                         
 
 //#define INV_LOG2_E (uint64_t 0xB17217F7)
 
@@ -182,9 +187,9 @@ void tests(){
     .precision = 32
   };
 
-  /* while(1){ */
-  /*   next_exp(rate); */
-  /* } */
+  while(1){
+    next_exp(rate);
+  }
 
 }
 
@@ -284,6 +289,7 @@ struct fixed_64 secs_to_fixed(time_t seconds, suseconds_t usecs, uint64_t precis
 
   seconds <<= precision;
 
+  
   printf("seconds  ");
   print_num(seconds);
 
@@ -305,7 +311,6 @@ struct fixed_64 secs_to_fixed(time_t seconds, suseconds_t usecs, uint64_t precis
 
 static uint64_t next_exp(struct fixed_64 rate_parameter)
 {
-
 
   uint64_t precision = rate_parameter.precision;
   uint64_t ran = rand();
