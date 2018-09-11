@@ -14,7 +14,7 @@ uint64_t get_decimal(struct fixed_64);
 void print(struct fixed_64);
 
 
-static uint64_t next_exp(struct fixed_64 parameter);
+static struct fixed_64 next_exp(struct fixed_64 parameter);
 void print_num(uint64_t);
 
 

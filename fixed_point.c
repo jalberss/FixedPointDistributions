@@ -18,8 +18,6 @@
 #define DEBUG(S, ...)                                                                          
 #endif                                                                                         
 
-//#define INV_LOG2_E (uint64_t 0xB17217F7)
-
 struct fixed_64 INV_LOG2_E = {
   .whole = 0x00000000B17217F7,
   .precision = 32,
@@ -190,7 +188,7 @@ void tests(){
   
 
   struct fixed_64 rate = {
-    .whole = 0x0000000100000000,
+    .whole = 0x0000000000064000,
     .precision = 32
   };
 
@@ -326,7 +324,8 @@ struct fixed_64 secs_to_fixed(time_t seconds, suseconds_t usecs, uint64_t precis
   return res;
 }
 
-static uint64_t next_exp(struct fixed_64 rate_parameter)
+
+static struct fixed_64 next_exp(struct fixed_64 rate_parameter)
 {
 
   uint64_t precision = rate_parameter.precision;
@@ -351,7 +350,7 @@ static uint64_t next_exp(struct fixed_64 rate_parameter)
 
   struct fixed_64 result = div_fp(log,rate_parameter);
   fprintf(stderr,"Grab this: %"PRIu64"\n", result.whole);
-  return result.whole;
+  return result;
 }
 
 struct fixed_64 logfix(struct fixed_64 a)
