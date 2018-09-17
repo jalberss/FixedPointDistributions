@@ -175,22 +175,28 @@ void tests(){
 
   print_num(x.whole);
   
-  assert(x.whole == 0x0000000100001000);
+  assert(x.whole == 0x0000000104000000);
 
   assert(1 == get_usecs(x));
   assert(1 == get_secs(x));
 
-  x = secs_to_fixed(1, 0x100000, 32);
+  x = secs_to_fixed(1, 100000, 32);
 
   assert(get_secs(x) == 2);
   assert(x.whole == 0x0000000200000000);
 
-  
+
+  test = secs_to_fixed(90,90,32);
+  assert(90 == get_secs(test));
+  assert(90 == get_usecs(test));
 
   struct fixed_64 rate = {
     .whole = 0x0000000000064000,
     .precision = 32
   };
+
+  
+  
 
   while(1){
     next_exp(rate);
@@ -279,7 +285,7 @@ suseconds_t get_usecs(struct fixed_64 fp){
   // Decimal does not exactly correspond to number of useconds,
   // so we have to shift.
   uint64_t decimal = get_decimal(fp);
-  decimal >>= USEC_IN_SEC;
+  decimal >>= (fp.precision - 6);
   return (suseconds_t)decimal;
 }
 
@@ -301,6 +307,12 @@ struct fixed_64 secs_to_fixed(time_t seconds, suseconds_t usecs, uint64_t precis
     fprintf(stderr,"WARNING: RESULT WILL OVERFLOW\n");
   }
 
+  #define USEC_IN_SEC_DECIMAL 100000
+
+  while(usecs > USEC_IN_SEC_DECIMAL){
+    seconds++;
+    usecs /= USEC_IN_SEC_DECIMAL;
+  }
 
   seconds <<= precision;
 
@@ -308,10 +320,11 @@ struct fixed_64 secs_to_fixed(time_t seconds, suseconds_t usecs, uint64_t precis
   printf("seconds  ");
   print_num(seconds);
 
-
-  uint64_t useconds = ((uint64_t)usecs) << USEC_IN_SEC;
-
   printf("useconds ");
+  print_num(usecs);
+
+  uint64_t useconds = ((uint64_t)usecs) << (precision - 6);
+
   print_num(useconds);
 
   uint64_t full = seconds + useconds;
