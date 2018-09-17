@@ -18,7 +18,7 @@ static struct fixed_64 next_exp(struct fixed_64 parameter);
 void print_num(uint64_t);
 
 
-
+struct fixed_64 get_next_exp(time_t seconds, suseconds_t usecs);
 struct fixed_64 logfix (struct fixed_64);
 uint64_t log2fix (struct fixed_64);
 
