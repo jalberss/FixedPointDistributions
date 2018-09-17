@@ -18,10 +18,14 @@
 #define DEBUG(S, ...)                                                                          
 #endif                                                                                         
 
+#define USEC 0x000001AC
+
 struct fixed_64 INV_LOG2_E = {
   .whole = 0x00000000B17217F7,
   .precision = 32,
 };
+
+
 
 void set_integral(struct fixed_64* fp, uint64_t num)
 {
@@ -175,9 +179,8 @@ void tests(){
 
   print_num(x.whole);
   
-  assert(x.whole == 0x0000000104000000);
+  assert(x.whole == 0x00000001000001ac);
 
-  assert(1 == get_usecs(x));
   assert(1 == get_secs(x));
 
   x = secs_to_fixed(1, 100000, 32);
@@ -185,20 +188,24 @@ void tests(){
   assert(get_secs(x) == 2);
   assert(x.whole == 0x0000000200000000);
 
-
+  memset(&test,0,sizeof(struct fixed_64));
+  printf("\n");
   test = secs_to_fixed(90,90,32);
+  printf("\n");
+  print(test);
+  print_num(get_secs(test));
   assert(90 == get_secs(test));
-  assert(90 == get_usecs(test));
 
   struct fixed_64 rate = {
-    .whole = 0x0000000000064000,
+    .whole = 0x0000000010000000,
     .precision = 32
   };
 
+  printf("\nThis is the rate\n");
+  print(rate);
   
-  
-
-  while(1){
+  printf("Rate Testing");
+  for (int i = 0; i < 1; ++i){
     next_exp(rate);
   }
 
@@ -285,7 +292,7 @@ suseconds_t get_usecs(struct fixed_64 fp){
   // Decimal does not exactly correspond to number of useconds,
   // so we have to shift.
   uint64_t decimal = get_decimal(fp);
-  decimal >>= (fp.precision - 6);
+  decimal >>= (fp.precision - 5);
   return (suseconds_t)decimal;
 }
 
@@ -309,9 +316,9 @@ struct fixed_64 secs_to_fixed(time_t seconds, suseconds_t usecs, uint64_t precis
 
   #define USEC_IN_SEC_DECIMAL 100000
 
-  while(usecs > USEC_IN_SEC_DECIMAL){
+  while(usecs >= USEC_IN_SEC_DECIMAL){
     seconds++;
-    usecs /= USEC_IN_SEC_DECIMAL;
+    usecs -= USEC_IN_SEC_DECIMAL;
   }
 
   seconds <<= precision;
@@ -323,7 +330,20 @@ struct fixed_64 secs_to_fixed(time_t seconds, suseconds_t usecs, uint64_t precis
   printf("useconds ");
   print_num(usecs);
 
-  uint64_t useconds = ((uint64_t)usecs) << (precision - 6);
+
+  // Trickiest part, we are given usecs. 100000 usec is one sec.
+  // However, we want to maintain sec.sec notation and not sec.usec notation
+  // Therefore to go do usecs divided by 100000 and use shift so that we don't lose
+  // precision
+  uint64_t useconds = (usecs * USEC);
+
+
+  printf("seconds  ");
+  print_num(seconds);
+
+  printf("useconds ");
+  print_num(useconds);
+
 
   print_num(useconds);
 
@@ -344,7 +364,11 @@ static struct fixed_64 next_exp(struct fixed_64 rate_parameter)
   uint64_t precision = rate_parameter.precision;
   uint64_t ran = rand();
 
+  printf("This is the random number: %lld\n", ran);
+  
   ran <<= precision;
+
+
   
   struct fixed_64 r = {
     .whole = ran,
@@ -359,9 +383,17 @@ static struct fixed_64 next_exp(struct fixed_64 rate_parameter)
   };
 
   struct fixed_64 c = div_fp(r, MAX);
+  printf("\nRandom divided by MAX where MAX is %d\n",RAND_MAX);
+  print(c);
+  
   struct fixed_64 log = logfix(c);
+  printf("\nlog of above number\n");
+  print(log);
 
+  // Das Problem legt darin
+  // Wahrscheinlich mit kleinen Nummern zu tun hat
   struct fixed_64 result = div_fp(log,rate_parameter);
+  //
   fprintf(stderr,"Grab this: %"PRIu64"\n", result.whole);
   return result;
 }
