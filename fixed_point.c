@@ -71,6 +71,7 @@ void print(struct fixed_64 fp)
   uint64_t lower = fp.whole & (mask >> fp.precision);
   uint64_t upper = fp.whole >> (fp.precision);
   printf("%08" PRIx64 ".%08" PRIx64 "\n Prec %"PRIu64"\n",upper, lower, fp.precision);
+  printf("Grab this: %" PRIu64 ".%" PRIu64 "\n Prec %"PRIu64"\n",upper, lower, fp.precision);
 }
 
 void tests();
@@ -197,7 +198,7 @@ void tests(){
   assert(90 == get_secs(test));
 
   struct fixed_64 rate = {
-    .whole = 0x0000000010000000,
+    .whole = 0x0000000100000000,
     .precision = 32
   };
 
@@ -205,7 +206,7 @@ void tests(){
   print(rate);
   
   printf("Rate Testing");
-  for (int i = 0; i < 1; ++i){
+  while(1){
     next_exp(rate);
   }
 
@@ -357,17 +358,20 @@ struct fixed_64 secs_to_fixed(time_t seconds, suseconds_t usecs, uint64_t precis
   return res;
 }
 
-
+// mean = 1/rate_parameter 
 static struct fixed_64 next_exp(struct fixed_64 rate_parameter)
 {
 
   uint64_t precision = rate_parameter.precision;
   uint64_t ran = rand();
 
-  printf("This is the random number: %lld\n", ran);
+  printf("\n---------------------------------\n");
+  printf("\nThis is the random number: %lld\n", ran);
   
   ran <<= precision;
 
+
+  //T = ln(U) / \lambda
 
   
   struct fixed_64 r = {
@@ -383,18 +387,20 @@ static struct fixed_64 next_exp(struct fixed_64 rate_parameter)
   };
 
   struct fixed_64 c = div_fp(r, MAX);
-  printf("\nRandom divided by MAX where MAX is %d\n",RAND_MAX);
-  print(c);
+  //  printf("\nRandom divided by MAX where MAX is %d\n",RAND_MAX);
+  //  print(c);
   
   struct fixed_64 log = logfix(c);
-  printf("\nlog of above number\n");
-  print(log);
+  //  printf("\nlog of above number\n");
+  //  print(log);
 
-  // Das Problem legt darin
-  // Wahrscheinlich mit kleinen Nummern zu tun hat
   struct fixed_64 result = div_fp(log,rate_parameter);
-  //
-  fprintf(stderr,"Grab this: %"PRIu64"\n", result.whole);
+  //  printf("\nHere is the rate parameter\n");
+  //  print(rate_parameter);
+  
+  printf("\nHere is final result\n");
+  print(result);
+  printf("\n---------------------------------\n");
   return result;
 }
 
