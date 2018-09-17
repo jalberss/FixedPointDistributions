@@ -207,6 +207,7 @@ void tests(){
   print(rate);
   
   printf("Rate Testing");
+
   while(0){
     next_exp(rate);
   }
